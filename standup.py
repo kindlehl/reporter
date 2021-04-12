@@ -3,6 +3,7 @@
 import datetime
 import utils.db
 import utils.time
+import utils.tasks
 import os
 
 if 'tags' in os.environ:
@@ -26,11 +27,11 @@ this_week_projects = {"unknown_project": []}
 
 for task in tasks:
     if task["completed"]:
-        print(dir(task["completed_datetime"]))
+        # Implement debugging
+        #print(dir(task["completed_datetime"]))
         if last_week_start < task["completed_datetime"] <  last_week_end:
             # Remove useless fields
-            task.pop('completed', None)
-            task.pop('completed_datetime', None)
+            utils.tasks.strip(task, 'completed', 'completed_datetime')
             if len(task["tags"]) == 0:
                 task["tags"] = ["unknown"]
                 #last_week_projects["unknown_project"].append(task)
@@ -45,8 +46,7 @@ for task in tasks:
     elif task["due_date"] is not None:
         if this_week_start < task["due_date"] <  this_week_end:
             # Remove useless fields
-            task.pop('completed', None)
-            task.pop('completed_datetime', None)
+            utils.tasks.strip(task, 'completed', 'completed_datetime')
 
             if len(task["tags"]) == 0:
                 task["tags"] = ["unknown"]
@@ -60,7 +60,8 @@ for task in tasks:
                 this_week_projects[tag].append(task)
 
     else:
-        print("task not matching")
+        # Implement debugging
+        #print("task not matching")
 
 report["This Week"] = this_week_projects
 report["Last Week"] = last_week_projects
