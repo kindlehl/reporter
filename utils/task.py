@@ -8,8 +8,17 @@ class Task(object):
         # Things we want to show up in reports
         self._public = kwargs
 
-    def hide(self, field):
-        self._public.pop(field)
+    def hide(self, *fields):
+        try:
+            for f in fields:
+                self._public.pop(f)
+        except:
+            import pdb
+            #pdb.set_trace()
+
+    def set(self, **kwargs):
+        self._public.update(kwargs)
+        self.__dict__.update(kwargs)
 
     # Return objects that we want to publish
     @property

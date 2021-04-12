@@ -24,20 +24,13 @@ class Category:
 
         return True
     
-    def find(self, thing):
-        if isinstance(thing, Category):
-            return self.categories.index(thing)
-        if isinstance(thing, Task):
-            return self.tasks.index(thing)
-
-        """
-        {
-            "work": [
-                "aft":
-                    - task
-            ]
-        }
-        """
+    def find(self, name):
+        for c in self.categories:
+            found = c.find(name)
+            if found is not None:
+                return found
+        if self.name == name:
+            return self
 
     @property
     def dict(self):
@@ -46,7 +39,6 @@ class Category:
             return {self.name: [i.dict for i in things]}
         else:
             return {self.name: {}}
-
 
     def add(self, thing):
         if isinstance(thing, Category):

@@ -4,6 +4,13 @@ import datetime
 import utils.db
 import utils.time
 import utils.task
+
+from utils.category import Category
+from utils.report import Report
+from utils.task import Task
+
+import pdb
+
 import os
 
 # handle this via cli args PLS
@@ -15,54 +22,57 @@ else:
 # Read today's data pull
 tasks_yaml = utils.db.read()
 
-tasks = [utils.task.Task(**item) for item in tasks_yaml]
+tasks = [Task(**item) for item in tasks_yaml]
 
+# Get comparable times
 last_week_start, last_week_end = utils.time.last_week()
 this_week_start, this_week_end = utils.time.this_week()
 
-report = {
-        "This Week": [],
-        "Last Week": []
-        }
+lw = Category('Last Week')
+tw = Category('This Week')
 
-last_week_projects = {"unknown_project": []}
-this_week_projects = {"unknown_project": []}
+lw.add(Category("Unknown"))
+tw.add(Category("Unknown"))
 
-# Add task to project.
-def add_task(task, project, *cleanup):
+# Add task to category
+def add_task(task, category, *cleanup):
     # Remove useless fields
     if len(task.tags) == 0:
-        task.tags = ["unknown"]
+        task.set(tags=["Unknown"])
     for tag in task.tags:
         if tags_to_keep and tag not in tags_to_keep:
             return False
-        if tag not in project:
-            project[tag] = []
-        utils.task.strip(task, *cleanup)
-        project[tag].append(task.dict)
+
+        # Get 'tag' category
+        tag_cat = category.find(tag)
+        if tag_cat is None:
+            # Or create it if it doesn't exist
+            category.add(Category(tag))
+            tag_cat = category.find(tag)
+
+        task.hide(*cleanup)
+        tag_cat.add(task)
     return True
 
 trim = ['completed', 'completed_datetime', 'tags']
+#trim = []
 
-# check if task is in a specific time slot
-# clean it up
-# toss it in
 for task in tasks:
+    #print(task.dict)
     if task.completed:
         # Implement debugging
         #print(dir(task["completed_datetime"]))
         if last_week_start < task.completed_datetime <  last_week_end:
-            add_task(task, last_week_projects, *trim)
+            add_task(task, lw, *trim)
 
     elif task.due_date is not None:
         if this_week_start < task.due_date <  this_week_end:
-            add_task(task, this_week_projects, *trim)
+            add_task(task, tw, *trim)
     #else:
         # Implement debugging
         #print("task not matching")
 
-report["This Week"] = this_week_projects
-report["Last Week"] = last_week_projects
-            
-# Only write task._yaml 
-utils.db.write(report, "report.yaml")
+report = Report()
+report.add(lw)
+report.add(tw)
+report.write()
