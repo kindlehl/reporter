@@ -1,0 +1,5 @@
+report.yaml
+202*-*-*.yaml
+*/__pycache*
+*.vim
+*.swp
