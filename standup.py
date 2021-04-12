@@ -3,9 +3,10 @@
 import datetime
 import utils.db
 import utils.time
-import utils.tasks
+import utils.task
 import os
 
+# handle this via cli args PLS
 if 'tags' in os.environ:
     tags_to_keep = os.environ["tags"].split(',')
 else:
@@ -14,7 +15,7 @@ else:
 # Read today's data pull
 tasks_yaml = utils.db.read()
 
-tasks = [utils.tasks.Task(**item) for item in tasks_yaml]
+tasks = [utils.task.Task(**item) for item in tasks_yaml]
 
 last_week_start, last_week_end = utils.time.last_week()
 this_week_start, this_week_end = utils.time.this_week()
@@ -37,7 +38,7 @@ def add_task(task, project, *cleanup):
             return False
         if tag not in project:
             project[tag] = []
-        utils.tasks.strip(task, *cleanup)
+        utils.task.strip(task, *cleanup)
         project[tag].append(task.dict)
     return True
 
