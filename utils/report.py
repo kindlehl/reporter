@@ -1,4 +1,5 @@
 import utils.db
+from datetime import datetime
 
 # This class will hold all the settings and provide methods for writing reports
 class Report():
@@ -26,4 +27,4 @@ class Report():
             self._dict.update(c.dict)
 
     def write(self):
-        utils.db.write(self._dict, "%s.yaml" % self.name)
+        utils.db.write(self._dict, datetime.today().strftime('%Y-%m-%d-{}.yaml'.format(self.name)))
