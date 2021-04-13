@@ -1,42 +1,28 @@
 #!/usr/bin/env python
 
-import datetime
 import utils.db
 import utils.time
-import utils.task
 
 from utils.category import Category
 from utils.report import Report
 from utils.task import Task
+from utils.config import Config
+from utils.debug import debug
 
-import pdb
+config = Config("standup")
+tags_to_keep = config.get_list("tags")
+default_tag = config.get("default_tag")
+task_attrib_whitelist = config.get_list("attribute_whitelist")
 
-import os
-
-
-###### BEGIN SETTINGS THAT SHOULD BE CONFIGURABLE
-
-# handle this via cli args PLS
-if 'tags' in os.environ:
-    tags_to_keep = os.environ["tags"].split(',')
-else:
-    tags_to_keep = []
-
-default_tag = 'Unknown'
-task_attrib_whitelist = ['description', 'due_date']
-
-###### END
+# Debugging statements for ConfigParser
+debug(tags_to_keep)
+debug(default_tag)
+debug(task_attrib_whitelist)
 
 # Read today's data pull
 tasks_yaml = utils.db.read()
 
 tasks = [Task(**item) for item in tasks_yaml]
-
-if len(tags_to_keep) == 0:
-    for task in tasks:
-        for tag in task.tags:
-            if tag not in tags_to_keep:
-                tags_to_keep.append(tag)
 
 lw = Category('Last Week')
 tw = Category('This Week')
@@ -51,12 +37,14 @@ def add_task(task, category, *whitelist):
     task.trim(*whitelist)
     for tag in task_tags:
 
-        if not category.find(tag) and tag in tags_to_keep:
+        # Add tags to category if they don't exist yet
+        if not category.find(tag) and (tags_to_keep is None or tag in tags_to_keep):
             category.add(Category(tag))
 
+        # Get the tag (subcat) from main category
         subcat = category.find(tag)
 
-        if tag in tags_to_keep:
+        if subcat is not None:
             subcat.add(task)
             return True
 
@@ -69,22 +57,20 @@ this_week_start, this_week_end = utils.time.this_week()
 for task in tasks:
     # Add a default tag
     if len(task.tags) == 0:
-        print("NO TAG")
+        debug("NO TAG")
         task.set(tags=[default_tag])
 
     #print(task.dict)
     if task.completed:
-        # Implement debugging
-        #print(dir(task["completed_datetime"]))
+        debug(dir(task.completed_datetime))
         if last_week_start < task.completed_datetime <  last_week_end:
             add_task(task, lw, *task_attrib_whitelist)
 
     elif task.due_date is not None:
         if this_week_start < task.due_date <  this_week_end:
             add_task(task, tw, *task_attrib_whitelist)
-    #else:
-        # Implement debugging
-        #print("task not matching")
+    else:
+        debug("task not matching")
 
 report = Report()
 report.add(lw)
