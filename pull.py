@@ -6,21 +6,26 @@ import requests
 import xml
 import utils.db
 from requests.auth import HTTPBasicAuth
+from utils.config import Config
 
 import xml.etree.ElementTree as ET
+
+config   = Config("pull")
+username = config.get("username")
+password = config.get("password")
+hostname = config.get("hostname")
+port     = config.get("port")
 
 headers = {
         "Content-Type": "text/xml"
         }
 
-auth=HTTPBasicAuth("kindlehl", "kindlehl")
+auth=HTTPBasicAuth(username, password)
 
 # Get list of all tasks in xml format
-xml = requests.get("http://localhost:3000/todos.xml", auth=auth).text
+xml = requests.get("http://{}:{}/todos.xml".format(hostname, port), auth=auth).text
 
 root = ET.fromstring(xml)
-
-
 tasks = []
 
 # THINGS TO DO NEXT:
