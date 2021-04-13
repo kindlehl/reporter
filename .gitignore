@@ -3,3 +3,4 @@ report.yaml
 */__pycache*
 *.vim
 *.swp
+*.cfg
