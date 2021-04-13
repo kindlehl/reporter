@@ -8,13 +8,15 @@ class Task(object):
         # Things we want to show up in reports
         self._public = kwargs
 
-    def hide(self, *fields):
-        try:
-            for f in fields:
-                self._public.pop(f)
-        except:
-            import pdb
-            #pdb.set_trace()
+    # Whitelist fields to show in self.dict
+    def trim(self, *keep):
+        purge_list = []
+        for field in self._public:
+            if field not in keep:
+                purge_list.append(field)
+        # Hide fields
+        for item in purge_list:
+            self._public.pop(item)
 
     def set(self, **kwargs):
         self._public.update(kwargs)
@@ -24,9 +26,3 @@ class Task(object):
     @property
     def dict(self):
         return self._public
-
-# Remove unwanted fields from tasks
-def strip(task, *args):
-    for field in args:
-        task.hide(field)
-    return task

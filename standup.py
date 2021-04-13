@@ -13,61 +13,75 @@ import pdb
 
 import os
 
+
+###### BEGIN SETTINGS THAT SHOULD BE CONFIGURABLE
+
 # handle this via cli args PLS
 if 'tags' in os.environ:
     tags_to_keep = os.environ["tags"].split(',')
 else:
-    tags_to_keep = None
+    tags_to_keep = []
+
+default_tag = 'Unknown'
+task_attrib_whitelist = ['description', 'due_date']
+
+###### END
 
 # Read today's data pull
 tasks_yaml = utils.db.read()
 
 tasks = [Task(**item) for item in tasks_yaml]
 
-# Get comparable times
-last_week_start, last_week_end = utils.time.last_week()
-this_week_start, this_week_end = utils.time.this_week()
+if len(tags_to_keep) == 0:
+    for task in tasks:
+        for tag in task.tags:
+            if tag not in tags_to_keep:
+                tags_to_keep.append(tag)
 
 lw = Category('Last Week')
 tw = Category('This Week')
 
-lw.add(Category("Unknown"))
-tw.add(Category("Unknown"))
-
 # Add task to category
-def add_task(task, category, *cleanup):
-    # Remove useless fields
-    if len(task.tags) == 0:
-        task.set(tags=["Unknown"])
-    for tag in task.tags:
-        if tags_to_keep and tag not in tags_to_keep:
-            return False
+# Create sub-catagories for all tags
+def add_task(task, category, *whitelist):
+    # __dict__ member, should deep copy (I think)
+    task_tags = task.tags
 
-        # Get 'tag' category
-        tag_cat = category.find(tag)
-        if tag_cat is None:
-            # Or create it if it doesn't exist
+    # Clean the task
+    task.trim(*whitelist)
+    for tag in task_tags:
+
+        if not category.find(tag) and tag in tags_to_keep:
             category.add(Category(tag))
-            tag_cat = category.find(tag)
 
-        task.hide(*cleanup)
-        tag_cat.add(task)
-    return True
+        subcat = category.find(tag)
 
-trim = ['completed', 'completed_datetime', 'tags']
-#trim = []
+        if tag in tags_to_keep:
+            subcat.add(task)
+            return True
+
+        return False
+
+# Get comparable times
+last_week_start, last_week_end = utils.time.last_week()
+this_week_start, this_week_end = utils.time.this_week()
 
 for task in tasks:
+    # Add a default tag
+    if len(task.tags) == 0:
+        print("NO TAG")
+        task.set(tags=[default_tag])
+
     #print(task.dict)
     if task.completed:
         # Implement debugging
         #print(dir(task["completed_datetime"]))
         if last_week_start < task.completed_datetime <  last_week_end:
-            add_task(task, lw, *trim)
+            add_task(task, lw, *task_attrib_whitelist)
 
     elif task.due_date is not None:
         if this_week_start < task.due_date <  this_week_end:
-            add_task(task, tw, *trim)
+            add_task(task, tw, *task_attrib_whitelist)
     #else:
         # Implement debugging
         #print("task not matching")
